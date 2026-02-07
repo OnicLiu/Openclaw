@@ -2,56 +2,106 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>The Soul - Muse Engine</title>
+    <title>Matrix Soul - Muse Engine</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
         #knowledge-panel {
             position: fixed; top: 20px; left: 20px; width: 300px; 
-            background: rgba(0, 30, 45, 0.75); color: #00faff; 
-            padding: 20px; border-radius: 15px; border: 1px solid #00faff;
-            backdrop-filter: blur(12px); max-height: 85vh; overflow-y: auto;
-            box-shadow: 0 0 25px rgba(0, 250, 255, 0.25); z-index: 100;
+            background: rgba(0, 20, 0, 0.85); color: #00ff41; 
+            padding: 20px; border-radius: 5px; border: 1px solid #00ff41;
+            backdrop-filter: blur(8px); max-height: 85vh; overflow-y: auto;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2); z-index: 100;
         }
-        h3 { margin: 0 0 15px 0; font-size: 1.3em; border-bottom: 2px solid #00faff; padding-bottom: 10px; letter-spacing: 1px; }
-        .item { margin-bottom: 18px; padding-bottom: 8px; border-bottom: 1px solid rgba(0, 250, 255, 0.15); transition: 0.3s; }
-        .item:hover { background: rgba(0, 250, 255, 0.05); border-radius: 5px; }
-        .time { font-size: 0.75em; color: #888; margin-bottom: 4px; }
-        .title-link { 
-            text-decoration: none; color: #00faff; font-weight: bold; font-size: 0.95em; 
-            display: block; transition: 0.2s;
-        }
-        .title-link:hover { color: #ffffff; transform: translateX(5px); }
-        /* 捲軸美化 */
-        #knowledge-panel::-webkit-scrollbar { width: 5px; }
-        #knowledge-panel::-webkit-scrollbar-thumb { background: #00faff; border-radius: 10px; }
+        h3 { margin: 0 0 15px 0; font-size: 1.2em; border-bottom: 2px solid #00ff41; padding-bottom: 10px; text-shadow: 0 0 5px #00ff41; }
+        .item { margin-bottom: 18px; border-bottom: 1px solid rgba(0, 255, 65, 0.2); padding-bottom: 8px; }
+        .time { font-size: 0.75em; color: #008f11; }
+        .title-link { text-decoration: none; color: #00ff41; font-weight: bold; font-size: 0.9em; display: block; }
+        .title-link:hover { color: #fff; text-shadow: 0 0 10px #00ff41; }
     </style>
 </head>
 <body>
     <div id="knowledge-panel">
-        <h3>🧠 核心知識庫</h3>
-        <div id="list">校準中...</div>
+        <h3>⚡ 數位偵察中心</h3>
+        <div id="list">正在接入矩陣...</div>
     </div>
 <script>
-let phase = 0, zoff = 0;
+let symbols = [];
+let symbolSize = 20;
 const GITHUB_BASE = "https://github.com/OnicLiu/Openclaw/blob/main/";
 
-function setup() { createCanvas(windowWidth, windowHeight); updateList(); setInterval(updateList, 10000); }
-function draw() {
-    background(0, 45); translate(width / 2, height / 2); noFill();
-    for (let i = 0; i < 9; i++) {
-        stroke(0, 255, 255, map(i, 0, 9, 220, 15)); strokeWeight(1.5);
-        beginShape();
-        for (let a = 0; a < TWO_PI; a += 0.05) {
-            let xoff = map(cos(a + phase), -1, 1, 0, 1.3);
-            let yoff = map(sin(a + phase), -1, 1, 0, 1.3);
-            let r = map(noise(xoff, yoff, zoff), 0, 1, 150 - i*16, 260 - i*16);
-            vertex(r * cos(a), r * sin(a));
-        }
-        endShape(CLOSE);
+function setup() {
+    createCanvas(windowWidth, windowHeight);
+    background(0);
+    let x = 0;
+    for (let i = 0; i <= width / symbolSize; i++) {
+        let stream = new Stream();
+        stream.generateSymbols(x, random(-1000, 0));
+        symbols.push(stream);
+        x += symbolSize;
     }
-    phase += 0.006; zoff += 0.012;
+    textSize(symbolSize);
+    updateList();
+    setInterval(updateList, 10000);
 }
+
+function draw() {
+    background(0, 150); // 這裡的透明度控制殘影長度
+    symbols.forEach(function(stream) {
+        stream.render();
+    });
+}
+
+function Symbol(x, y, speed, first) {
+    this.x = x;
+    this.y = y;
+    this.value;
+    this.speed = speed;
+    this.switchInterval = round(random(2, 20));
+    this.first = first;
+
+    this.setToRandomSymbol = function() {
+        if (frameCount % this.switchInterval == 0) {
+            // 隨機選取片假名或數字
+            this.value = String.fromCharCode(0x30A0 + round(random(0, 96)));
+        }
+    }
+
+    this.rain = function() {
+        this.y = (this.y >= height) ? 0 : this.y + this.speed;
+    }
+}
+
+function Stream() {
+    this.symbols = [];
+    this.totalSymbols = round(random(5, 30));
+    this.speed = random(5, 15);
+
+    this.generateSymbols = function(x, y) {
+        let first = round(random(0, 4)) == 1;
+        for (let i = 0; i <= this.totalSymbols; i++) {
+            symbol = new Symbol(x, y, this.speed, first);
+            symbol.setToRandomSymbol();
+            this.symbols.push(symbol);
+            y -= symbolSize;
+            first = false;
+        }
+    }
+
+    this.render = function() {
+        this.symbols.forEach(function(symbol) {
+            if (symbol.first) {
+                fill(180, 255, 180); // 第一個字比較亮
+            } else {
+                fill(0, 255, 70);
+            }
+            text(symbol.value, symbol.x, symbol.y);
+            symbol.rain();
+            symbol.setToRandomSymbol();
+        });
+    }
+}
+
 async function updateList() {
     try {
         const res = await fetch('data.json?t=' + Date.now());
@@ -59,11 +109,12 @@ async function updateList() {
         document.getElementById('list').innerHTML = data.map(i => `
             <div class="item">
                 <div class="time">🕒 ${i.time}</div>
-                <a href="${GITHUB_BASE}${i.title}.md" target="_blank" class="title-link">📄 ${i.title}</a>
+                <a href="${GITHUB_BASE}${i.title}.md" target="_blank" class="title-link">> [DECODED] ${i.title}</a>
             </div>
         `).join('');
-    } catch (e) { console.log("等待資料流接通..."); }
+    } catch (e) { console.log("矩陣同步中..."); }
 }
+
 function windowResized() { resizeCanvas(windowWidth, windowHeight); }
 </script>
 </body>
