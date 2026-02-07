@@ -5,32 +5,54 @@
     <title>The Soul - Muse Engine</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        #knowledge-panel {
+            position: fixed; top: 20px; left: 20px; width: 280px; 
+            background: rgba(0, 30, 40, 0.7); color: #00faff; 
+            padding: 20px; border-radius: 15px; border: 1px solid #00faff;
+            backdrop-filter: blur(10px); max-height: 80vh; overflow-y: auto;
+            box-shadow: 0 0 20px rgba(0, 250, 255, 0.2); z-index: 100;
+        }
+        h3 { margin: 0 0 15px 0; font-size: 1.2em; border-bottom: 1px solid #00faff; padding-bottom: 10px; }
+        .item { margin-bottom: 15px; border-bottom: 1px solid rgba(0, 250, 255, 0.1); padding-bottom: 5px; }
+        .time { font-size: 0.75em; color: #888; }
+        .title { font-weight: bold; font-size: 0.9em; margin-top: 3px; }
     </style>
 </head>
 <body>
+    <div id="knowledge-panel">
+        <h3>🧠 核心知識庫</h3>
+        <div id="list">載入中...</div>
+    </div>
 <script>
 let phase = 0, zoff = 0;
-function setup() { createCanvas(windowWidth, windowHeight); }
+function setup() { createCanvas(windowWidth, windowHeight); updateList(); setInterval(updateList, 10000); }
 function draw() {
-    background(0, 30); // 帶點殘影感
-    translate(width / 2, height / 2);
-    noFill();
+    background(0, 50); translate(width / 2, height / 2); noFill();
     for (let i = 0; i < 8; i++) {
-        let alpha = map(i, 0, 8, 255, 20);
-        stroke(0, 255, 255, alpha); // 靈魂藍
-        strokeWeight(1.5);
+        stroke(0, 255, 255, map(i, 0, 8, 200, 20)); strokeWeight(1.5);
         beginShape();
         for (let a = 0; a < TWO_PI; a += 0.05) {
-            let xoff = map(cos(a + phase), -1, 1, 0, 1.5);
-            let yoff = map(sin(a + phase), -1, 1, 0, 1.5);
+            let xoff = map(cos(a + phase), -1, 1, 0, 1.2);
+            let yoff = map(sin(a + phase), -1, 1, 0, 1.2);
             let r = map(noise(xoff, yoff, zoff), 0, 1, 150 - i*15, 250 - i*15);
             vertex(r * cos(a), r * sin(a));
         }
         endShape(CLOSE);
     }
-    phase += 0.005;
-    zoff += 0.01;
+    phase += 0.005; zoff += 0.01;
+}
+async function updateList() {
+    try {
+        const res = await fetch('data.json?t=' + Date.now());
+        const data = await res.json();
+        document.getElementById('list').innerHTML = data.map(i => `
+            <div class="item">
+                <div class="time">🕒 ${i.time}</div>
+                <div class="title">📄 ${i.title}</div>
+            </div>
+        `).join('');
+    } catch (e) { console.log("等待資料中..."); }
 }
 function windowResized() { resizeCanvas(windowWidth, windowHeight); }
 </script>
